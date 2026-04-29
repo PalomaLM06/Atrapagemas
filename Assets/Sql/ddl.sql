@@ -1,0 +1,56 @@
+
+
+CREATE TABLE IF NOT EXIST Jugadores (
+Id INTEGER NOT NULL UNIQUE PRIMARY KEY,
+Nombre TEXT NOT NULL,
+Gemas INTEGRER,
+IdCasilla REFERENCES Casilla(Id_Casilla),
+x INTEGER,
+y INTEGER,
+);
+
+CREATE TABLE IF NOT EXIST Casilla (
+Id_casilla INTEGER NOT NULL UNIQUE PRIMARY KEY,
+Tipo TEXT,
+Orden INTEGER,
+x INTEGER,
+y INTEGER,
+Id_reto INTEGER REFERENCES Reto(Id_Reto)
+Id_tablero INTEGER REFERENCES Tablero(id_tablero)
+);
+
+
+CREATE TABLE IF NOT EXIST Gadgets (
+Id_gadgets INTEGER NOT NULL UNIQUE PRIMARY KEY,
+Descripcion TEXT,
+Coste INTEGER,
+);
+
+CREATE TABLE IF NOT EXIST Jugador_Gadgets (
+Id_jugador_gadgets INTEGER NOT NULL UNIQUE PRIMARY KEY,
+Id_jugador INTEGER REFERENCES Jugador(id)
+Id_gadgets INTEGER REFERENCES Gadgets(id_gadgets)
+);
+
+CREATE TABLE IF NOT EXIST Retos (
+Id_reto INTEGER NOT NULL UNIQUE PRIMARY KEY,
+Tipo_casilla TEXT,
+Descripcion TEXT,
+);
+
+CREATE TABLE IF NOT EXIST Tablero (
+Id_tablero INTEGER NOT NULL UNIQUE PRIMARY KEY,
+Nombre TEXT,
+);
+
+
+
+
+
+
+
+
+
+
+
+
