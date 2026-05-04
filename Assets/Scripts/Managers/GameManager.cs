@@ -1,107 +1,67 @@
-
-
 using UnityEngine;
 using System.Collections.Generic;
 
-public class GameManager : MonoBehaviour
+public class DBManager : MonoBehaviour
 {
-    public DiceManager diceManager;
-    public BoardManager boardManager;
-    public List<PlayerController> jugadoresVisuales;
+    public static DBManager Instance;
 
-    private List<Jugador> jugadoresDatos;
-    private int turnoActual = 0;
-
-    private void Start()
+    private void Awake()
     {
-        jugadoresDatos = DBManager.Instance.SelectJugadores();
-        PosicionarJugadoresIniciales();
-    }
-
-    private void PosicionarJugadoresIniciales()
-    {
-        for (int i = 0; i < jugadoresDatos.Count; i++)
+        if (Instance == null)
         {
-            int ordenCasilla = jugadoresDatos[i].IdCasilla;
-            Vector3 posicion = boardManager.ObtenerPosicionPorOrden(ordenCasilla);
-
-            jugadoresVisuales[i].idJugador = jugadoresDatos[i].Id;
-            jugadoresVisuales[i].casillaActual = ordenCasilla;
-            jugadoresVisuales[i].MoverJugador(posicion);
-        }
-    }
-
-    public void JugarTurno()
-    {
-        PlayerController jugadorVisual = jugadoresVisuales[turnoActual];
-        Jugador jugadorDatos = jugadoresDatos[turnoActual];
-
-        int dado = diceManager.LanzarDado();
-        int nuevaCasilla = jugadorVisual.casillaActual + dado;
-
-        if (nuevaCasilla > 32)
-        {
-            nuevaCasilla = 32;
-        }
-
-        Casilla casillaDestino = DBManager.Instance.GetCasillaPorOrden(nuevaCasilla);
-
-        Vector3 nuevaPosicion = boardManager.ObtenerPosicionPorOrden(nuevaCasilla);
-        jugadorVisual.MoverJugador(nuevaPosicion);
-        jugadorVisual.casillaActual = nuevaCasilla;
-
-        DBManager.Instance.ActualizarPosicionJugador(
-            jugadorDatos.Id,
-            casillaDestino.Orden,
-            casillaDestino.X,
-            casillaDestino.Y
-        );
-
-        RevisarCasillaEspecial(casillaDestino);
-
-        PasarTurno();
-    }
-
-    private void RevisarCasillaEspecial(Casilla casilla)
-    {
-        Debug.Log("Tipo de casilla: " + casilla.Tipo);
-
-        if (casilla.Tipo == "Normal")
-        {
-            Debug.Log("Casilla normal.");
-        }
-        else if (casilla.Tipo == "ReRoll")
-        {
-            Debug.Log("El jugador lanza otra vez.");
-        }
-        else if (casilla.Tipo == "SkipTurn")
-        {
-            Debug.Log("El jugador pierde un turno.");
-        }
-        else if (casilla.Tipo == "Swap")
-        {
-            Debug.Log("El jugador intercambia posición.");
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
-            Reto reto = DBManager.Instance.GetRetoPorId(casilla.IdReto);
-
-            if (reto != null)
-            {
-                Debug.Log("Reto: " + reto.Descripcion);
-            }
+            Destroy(gameObject);
         }
     }
 
-    private void PasarTurno()
+    // 🔹 Simulación de base de datos
+    private List<Jugador> jugadores = new List<Jugador>()
     {
-        turnoActual++;
+        new Jugador { Id = 1, IdCasilla = 0 },
+        new Jugador { Id = 2, IdCasilla = 0 }
+    };
 
-        if (turnoActual >= jugadoresVisuales.Count)
+    private List<Casilla> casillas = new List<Casilla>()
+    {
+        new Casilla { Orden = 0, Tipo = "Normal", X = 0, Y = 0 },
+        new Casilla { Orden = 1, Tipo = "Normal", X = 1, Y = 0 },
+        new Casilla { Orden = 2, Tipo = "ReRoll", X = 2, Y = 0 },
+        new Casilla { Orden = 3, Tipo = "Reto", IdReto = 1, X = 3, Y = 0 }
+    };
+
+    private List<Reto> retos = new List<Reto>()
+    {
+        new Reto { Id = 1, Descripcion = "Haz 10 flexiones" }
+    };
+
+    // 🔹 Métodos que usa tu GameManager
+
+    public List<Jugador> SelectJugadores()
+    {
+        return jugadores;
+    }
+
+    public Casilla GetCasillaPorOrden(int orden)
+    {
+        return casillas.Find(c => c.Orden == orden);
+    }
+
+    public void ActualizarPosicionJugador(int id, int orden, float x, float y)
+    {
+        Jugador j = jugadores.Find(jug => jug.Id == id);
+        if (j != null)
         {
-            turnoActual = 0;
+            j.IdCasilla = orden;
+            Debug.Log($"Jugador {id} actualizado a casilla {orden}");
         }
+    }
 
-        Debug.Log("Siguiente turno: Jugador " + jugadoresVisuales[turnoActual].idJugador);
+    public Reto GetRetoPorId(int id)
+    {
+        return retos.Find(r => r.Id == id);
     }
 }
