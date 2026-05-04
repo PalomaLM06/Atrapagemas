@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public class DBManager : MonoBehaviour
 {
-    public static DBManager Instance;
+    public static DBManager Instance {get;private set;}
 
     private string dbPath;
 
@@ -15,14 +15,14 @@ public class DBManager : MonoBehaviour
         {
             Instance = this;
         }
-        else
+        else // no pueden existir 2 dbmanagers
         {
             Destroy(gameObject);
         }
-
+//guarda la ruta dond esta la base de datos
         dbPath = "URI=file:" + Application.dataPath + "/Database/juego.db";
     }
-
+//crea la conexion con la base de datos
     private IDbConnection CrearConexion()
     {
         IDbConnection conexion = new SqliteConnection(dbPath);
@@ -30,6 +30,7 @@ public class DBManager : MonoBehaviour
         return conexion;
     }
 
+//agrega parametros a una consulta
     private void AgregarParametro(IDbCommand comando, string nombre, object valor)
     {
         IDbDataParameter parametro = comando.CreateParameter();
@@ -50,6 +51,7 @@ public class DBManager : MonoBehaviour
 
                 using (IDataReader reader = comando.ExecuteReader())
                 {
+                    // mientras exista filas en la tabla, se leen
                     while (reader.Read())
                     {
                         Jugador jugador = new Jugador(
@@ -66,10 +68,12 @@ public class DBManager : MonoBehaviour
                 }
             }
         }
+        // lee los juagdores de la base de datos y los convierte en objetos para que unity puede usarlos
 
         return jugadores;
     }
 
+//carga todas las casillas del tablero desde Sqlite y las devuelve ordenadas para que Unity pueda trackear el recorrido
     public List<Casilla> SelectCasillas()
     {
         List<Casilla> casillas = new List<Casilla>();
