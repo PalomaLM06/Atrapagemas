@@ -74,9 +74,8 @@ INSERT INTO Retos (Id_reto, Tipo_casilla, Descripcion) VALUES
 (16, 'TodosVsTodos', 'Cada jugador elige un número del 1 al 5. Si dos o más jugadores repiten número, todos ellos pierden y retroceden casillas. Si nadie repite, no pasa nada.'),
 (17, 'ReRoll', 'Puedes lanzar el dado nuevamente y avanzar ese número adicional.'),
 (18, 'Swap', 'Intercambias posición con el jugador más cercano, ya sea adelante o atrás.'),
-(19, 'Dado', 'Se lanza un dado con efectos aleatorios: avanzar, retroceder, repetir turno o sin efecto.'),
-(20, 'SkipTurn', 'Pierdes tu siguiente turno o retrocedes 1 casilla.'),
-(21, 'Portal', 'Te mueves automáticamente a la casilla de portal más cercana, ya sea avanzando o retrocediendo.');
+(19, 'SkipTurn', 'Pierdes tu siguiente turno o retrocedes 1 casilla.'),
+(20, 'Portal', 'Te mueves automáticamente a la casilla de portal más cercana, ya sea avanzando o retrocediendo.');
 
 
 
