@@ -36,8 +36,8 @@ public class DBManager : MonoBehaviour
             conectado = false;
             return;
         }
-
-        conexion = new SQLiteConnection(dbPath, SQLiteOpenFlags.ReadOnly);
+//para que se pueda actualizar la base de datos
+        conexion = new SQLiteConnection(dbPath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create);
         conectado = true;
 
         Debug.Log("Base de datos conectada correctamente: " + dbPath);
@@ -193,6 +193,42 @@ public class DBManager : MonoBehaviour
             fila.TipoCasilla,
             fila.Descripcion
         );
+    }
+
+    public void ActualizarPosicionJugador(int idJugador, int nuevaCasilla, float x, float y)
+    {
+        if (!EstaConectado())
+        {
+            Debug.LogError("No hay conexión con la base de datos.");
+            return;
+        }
+
+        conexion.Execute(
+            "UPDATE Jugadores SET IdCasilla = ?, x = ?, y = ? WHERE Id = ?;",
+            nuevaCasilla,
+            x,
+            y,
+            idJugador
+        );
+
+        Debug.Log("Posición actualizada en SQLite para jugador " + idJugador);
+    }
+
+    public void ActualizarGemasJugador(int idJugador, int nuevasGemas)
+    {
+        if (!EstaConectado())
+        {
+            Debug.LogError("No hay conexión con la base de datos.");
+            return;
+        }
+
+        conexion.Execute(
+            "UPDATE Jugadores SET Gemas = ? WHERE Id = ?;",
+            nuevasGemas,
+            idJugador
+        );
+
+        Debug.Log("Gemas actualizadas en SQLite para jugador " + idJugador);
     }
 
     private void OnDestroy()

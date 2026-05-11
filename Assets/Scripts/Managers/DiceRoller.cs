@@ -12,10 +12,24 @@ public class DiceRoller : MonoBehaviour
 
     public void RollDice()
     {
-        if (!isRolling)
+        if (isRolling)
         {
-            StartCoroutine(RollAnimation());
+            return;
         }
+
+        if (diceImage == null)
+        {
+            Debug.LogError("DiceRoller: falta asignar Dice Image.");
+            return;
+        }
+
+        if (diceFaces == null || diceFaces.Length < 6)
+        {
+            Debug.LogError("DiceRoller: faltan las 6 caras del dado.");
+            return;
+        }
+
+        StartCoroutine(RollAnimation());
     }
 
     IEnumerator RollAnimation()
@@ -31,7 +45,7 @@ public class DiceRoller : MonoBehaviour
         {
             int randomFace = Random.Range(0, 6);
 
-            if (diceImage != null && diceFaces.Length >= 6)
+            if (diceImage != null)
             {
                 diceImage.sprite = diceFaces[randomFace];
             }
@@ -42,7 +56,7 @@ public class DiceRoller : MonoBehaviour
         int finalNumber = Random.Range(0, 6);
         int resultadoDado = finalNumber + 1;
 
-        if (diceImage != null && diceFaces.Length >= 6)
+        if (diceImage != null)
         {
             diceImage.sprite = diceFaces[finalNumber];
         }
@@ -51,15 +65,15 @@ public class DiceRoller : MonoBehaviour
 
         yield return new WaitForSeconds(0.7f);
 
+        isRolling = false;
+
         if (GameManager.Instance != null)
         {
             GameManager.Instance.ProcesarResultadoDado(resultadoDado);
         }
         else
         {
-            Debug.LogError("No se encontró GameManager.Instance. Abre la escena Dado desde el tablero.");
+            Debug.LogError("No se encontró GameManager.Instance. Abre la escena Dados desde el tablero.");
         }
-
-        isRolling = false;
     }
 }

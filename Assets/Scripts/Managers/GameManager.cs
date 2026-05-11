@@ -38,7 +38,7 @@ public class GameManager : MonoBehaviour
 
         if (DBManager.Instance == null)
         {
-            Debug.LogError("No existe DBManager en la escena. Crea un objeto DBManager y agrégale el script DBManager.cs.");
+            Debug.LogError("No existe DBManager en la escena.");
             return;
         }
 
@@ -79,7 +79,7 @@ public class GameManager : MonoBehaviour
 
         if (jugadores == null || jugadores.Count == 0)
         {
-            Debug.LogError("No hay jugadores cargados. Revisa la conexión con la base de datos.");
+            Debug.LogError("No hay jugadores cargados.");
             return;
         }
 
@@ -152,6 +152,8 @@ public class GameManager : MonoBehaviour
             jugador.Y = casillaActual.Y;
 
             Debug.Log(jugador.Nombre + " se movió a la casilla " + casillaActual.Orden + " de tipo " + casillaActual.Tipo);
+
+            GuardarPosicionJugador(jugador);
         }
         else
         {
@@ -263,11 +265,15 @@ public class GameManager : MonoBehaviour
         if (diferenciaJugador < diferenciaRival)
         {
             jugador.Gemas += 3;
+            GuardarGemasJugador(jugador);
+
             Debug.Log(jugador.Nombre + " ganó el 1vs1 y recibe 3 gemas. Total: " + jugador.Gemas);
         }
         else if (diferenciaRival < diferenciaJugador)
         {
             rival.Gemas += 3;
+            GuardarGemasJugador(rival);
+
             Debug.Log(rival.Nombre + " ganó el 1vs1 y recibe 3 gemas. Total: " + rival.Gemas);
         }
         else
@@ -287,6 +293,8 @@ public class GameManager : MonoBehaviour
         if (resultado >= 4)
         {
             jugador.Gemas += 2;
+            GuardarGemasJugador(jugador);
+
             Debug.Log(jugador.Nombre + " superó el desafío personal y ganó 2 gemas. Total: " + jugador.Gemas);
         }
         else
@@ -328,6 +336,8 @@ public class GameManager : MonoBehaviour
         else if (ganador != null)
         {
             ganador.Gemas += 4;
+            GuardarGemasJugador(ganador);
+
             Debug.Log(ganador.Nombre + " ganó TodosVsTodos y recibe 4 gemas. Total: " + ganador.Gemas);
         }
     }
@@ -427,6 +437,8 @@ public class GameManager : MonoBehaviour
             jugador.X = portalDestino.X;
             jugador.Y = portalDestino.Y;
 
+            GuardarPosicionJugador(jugador);
+
             Debug.Log(jugador.Nombre + " fue transportado a la casilla " + portalDestino.Orden);
         }
     }
@@ -472,6 +484,9 @@ public class GameManager : MonoBehaviour
         jugadorMasCercano.X = xTemporal;
         jugadorMasCercano.Y = yTemporal;
 
+        GuardarPosicionJugador(jugador);
+        GuardarPosicionJugador(jugadorMasCercano);
+
         Debug.Log(jugador.Nombre + " intercambió posición con " + jugadorMasCercano.Nombre);
     }
 
@@ -486,6 +501,7 @@ public class GameManager : MonoBehaviour
         int gemasGanadas = Random.Range(3, 8);
 
         jugador.Gemas += gemasGanadas;
+        GuardarGemasJugador(jugador);
 
         Debug.Log(jugador.Nombre + " abrió un cofre y ganó " + gemasGanadas + " gemas. Total: " + jugador.Gemas);
     }
@@ -508,6 +524,8 @@ public class GameManager : MonoBehaviour
             jugador.X = casillaActual.X;
             jugador.Y = casillaActual.Y;
 
+            GuardarPosicionJugador(jugador);
+
             Debug.Log(jugador.Nombre + " retrocedió a la casilla " + casillaActual.Orden);
         }
     }
@@ -517,6 +535,8 @@ public class GameManager : MonoBehaviour
         for (int i = inicio; i < jugadores.Count; i += 2)
         {
             jugadores[i].Gemas += cantidad;
+            GuardarGemasJugador(jugadores[i]);
+
             Debug.Log(jugadores[i].Nombre + " ahora tiene " + jugadores[i].Gemas + " gemas.");
         }
     }
@@ -540,5 +560,29 @@ public class GameManager : MonoBehaviour
         }
 
         Debug.Log("Ahora es turno de: " + jugadores[turnoActual].Nombre);
+    }
+
+    void GuardarPosicionJugador(Jugador jugador)
+    {
+        if (DBManager.Instance != null && DBManager.Instance.EstaConectado())
+        {
+            DBManager.Instance.ActualizarPosicionJugador(
+                jugador.Id,
+                jugador.IdCasilla,
+                jugador.X,
+                jugador.Y
+            );
+        }
+    }
+
+    void GuardarGemasJugador(Jugador jugador)
+    {
+        if (DBManager.Instance != null && DBManager.Instance.EstaConectado())
+        {
+            DBManager.Instance.ActualizarGemasJugador(
+                jugador.Id,
+                jugador.Gemas
+            );
+        }
     }
 }
