@@ -1,8 +1,11 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
+    public static GameManager Instance;
+
     public List<Jugador> jugadores;
     public List<Casilla> casillas;
     public List<Reto> retos;
@@ -10,17 +13,60 @@ public class GameManager : MonoBehaviour
     private int turnoActual = 0;
     private bool juegoTerminado = false;
 
+    private string escenaTablero;
+
+    void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        escenaTablero = SceneManager.GetActiveScene().name;
+    }
+
     void Start()
     {
-        jugadores = DatosPrueba.ObtenerJugadores();
-        casillas = DatosPrueba.ObtenerCasillas();
-        retos = DatosPrueba.ObtenerRetos();
+        if (jugadores != null && jugadores.Count > 0)
+        {
+            return;
+        }
 
-        Debug.Log("Juego iniciado sin base de datos.");
-        Debug.Log("Jugadores cargados: " + jugadores.Count);
-        Debug.Log("Casillas cargadas: " + casillas.Count);
-        Debug.Log("Retos cargados: " + retos.Count);
-        Debug.Log("Turno inicial: " + jugadores[turnoActual].Nombre);
+        if (DBManager.Instance == null)
+        {
+            Debug.LogError("No existe DBManager en la escena. Crea un objeto DBManager y agrégale el script DBManager.cs.");
+            return;
+        }
+
+        if (!DBManager.Instance.EstaConectado())
+        {
+            Debug.LogError("DBManager existe, pero no está conectado a la base de datos.");
+            return;
+        }
+
+        jugadores = DBManager.Instance.SelectJugadores();
+        casillas = DBManager.Instance.SelectCasillas();
+        retos = DBManager.Instance.SelectRetos();
+
+        Debug.Log("Juego iniciado usando base de datos SQLite.");
+        Debug.Log("Jugadores cargados desde SQLite: " + jugadores.Count);
+        Debug.Log("Casillas cargadas desde SQLite: " + casillas.Count);
+        Debug.Log("Retos cargados desde SQLite: " + retos.Count);
+
+        if (jugadores.Count > 0)
+        {
+            Debug.Log("Turno inicial: " + jugadores[turnoActual].Nombre);
+        }
+        else
+        {
+            Debug.LogError("No se cargaron jugadores desde la base de datos.");
+        }
+
+        Debug.Log("Escena de tablero guardada: " + escenaTablero);
     }
 
     public void TirarDado()
@@ -28,6 +74,12 @@ public class GameManager : MonoBehaviour
         if (juegoTerminado)
         {
             Debug.Log("El juego ya terminó.");
+            return;
+        }
+
+        if (jugadores == null || jugadores.Count == 0)
+        {
+            Debug.LogError("No hay jugadores cargados. Revisa la conexión con la base de datos.");
             return;
         }
 
@@ -42,7 +94,26 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        int dado = Random.Range(1, 7);
+        Debug.Log("Abriendo escena Dados para: " + jugador.Nombre);
+
+        SceneManager.LoadScene("Dados");
+    }
+
+    public void ProcesarResultadoDado(int dado)
+    {
+        if (juegoTerminado)
+        {
+            Debug.Log("El juego ya terminó.");
+            return;
+        }
+
+        if (jugadores == null || jugadores.Count == 0)
+        {
+            Debug.LogError("No hay jugadores cargados.");
+            return;
+        }
+
+        Jugador jugador = jugadores[turnoActual];
 
         Debug.Log("--------------------------------");
         Debug.Log("Turno de: " + jugador.Nombre);
@@ -56,6 +127,10 @@ public class GameManager : MonoBehaviour
         {
             CambiarTurno();
         }
+
+        Debug.Log("Regresando a escena de tablero: " + escenaTablero);
+
+        SceneManager.LoadScene(escenaTablero);
     }
 
     void MoverJugador(Jugador jugador, int pasos)
@@ -80,7 +155,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("No se encontró la casilla con Id: " + jugador.IdCasilla);
+            Debug.LogError("No se encontró la casilla con Id: " + jugador.IdCasilla);
         }
     }
 
@@ -90,7 +165,7 @@ public class GameManager : MonoBehaviour
 
         if (casillaActual == null)
         {
-            Debug.Log("No se encontró la casilla actual.");
+            Debug.LogError("No se encontró la casilla actual.");
             return;
         }
 
@@ -105,7 +180,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Esta casilla no tiene reto encontrado. IdReto: " + casillaActual.IdReto);
+            Debug.LogWarning("Esta casilla no tiene reto encontrado. IdReto: " + casillaActual.IdReto);
         }
 
         switch (casillaActual.Tipo)
@@ -155,7 +230,7 @@ public class GameManager : MonoBehaviour
                 break;
 
             default:
-                Debug.Log("Tipo de casilla no reconocido: " + casillaActual.Tipo);
+                Debug.LogWarning("Tipo de casilla no reconocido: " + casillaActual.Tipo);
                 break;
         }
     }
@@ -328,6 +403,12 @@ public class GameManager : MonoBehaviour
         }
 
         Casilla portalActual = casillas.Find(c => c.Id == jugador.IdCasilla);
+
+        if (portalActual == null)
+        {
+            Debug.LogWarning("No se encontró el portal actual.");
+            return;
+        }
 
         Casilla portalDestino = null;
 

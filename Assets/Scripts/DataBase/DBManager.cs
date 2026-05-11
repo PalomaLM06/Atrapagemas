@@ -1,204 +1,234 @@
-/*using UnityEngine;
-using Mono.Data.Sqlite;
-using System.Data;
+using UnityEngine;
 using System.Collections.Generic;
+using System.IO;
+using SQLite4Unity3d;
 
 public class DBManager : MonoBehaviour
 {
-    public static DBManager Instance {get;private set;}
+    public static DBManager Instance { get; private set; }
 
-    private string dbPath;
+    [SerializeField] private string databaseName = "juego.db";
+
+    private SQLiteConnection conexion;
+    private bool conectado = false;
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else // no pueden existir 2 dbmanagers
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
+            return;
         }
-//guarda la ruta dond esta la base de datos
-        dbPath = "URI=file:" + Application.dataPath + "/Database/juego.db";
-    }
-//crea la conexion con la base de datos
-    private IDbConnection CrearConexion()
-    {
-        IDbConnection conexion = new SqliteConnection(dbPath);
-        conexion.Open();
-        return conexion;
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        ConectarBaseDatos();
     }
 
-//agrega parametros a una consulta
-    private void AgregarParametro(IDbCommand comando, string nombre, object valor)
+    private void ConectarBaseDatos()
     {
-        IDbDataParameter parametro = comando.CreateParameter();
-        parametro.ParameterName = nombre;
-        parametro.Value = valor;
-        comando.Parameters.Add(parametro);
+        string dbPath = Path.Combine(Application.streamingAssetsPath, databaseName);
+
+        if (!File.Exists(dbPath))
+        {
+            Debug.LogError("No se encontró la base de datos en: " + dbPath);
+            conectado = false;
+            return;
+        }
+
+        conexion = new SQLiteConnection(dbPath, SQLiteOpenFlags.ReadOnly);
+        conectado = true;
+
+        Debug.Log("Base de datos conectada correctamente: " + dbPath);
+    }
+
+    public bool EstaConectado()
+    {
+        return conectado && conexion != null;
     }
 
     public List<Jugador> SelectJugadores()
     {
         List<Jugador> jugadores = new List<Jugador>();
 
-        using (IDbConnection conexion = CrearConexion())
+        if (!EstaConectado())
         {
-            using (IDbCommand comando = conexion.CreateCommand())
-            {
-                comando.CommandText = "SELECT Id, Nombre, Gemas, IdCasilla, x, y FROM Jugadores;";
-
-                using (IDataReader reader = comando.ExecuteReader())
-                {
-                    // mientras exista filas en la tabla, se leen
-                    while (reader.Read())
-                    {
-                        Jugador jugador = new Jugador(
-                            reader.GetInt32(0),
-                            reader.GetString(1),
-                            reader.GetInt32(2),
-                            reader.GetInt32(3),
-                            reader.GetInt32(4),
-                            reader.GetInt32(5)
-                        );
-
-                        jugadores.Add(jugador);
-                    }
-                }
-            }
+            Debug.LogError("No hay conexión con la base de datos.");
+            return jugadores;
         }
-        // lee los juagdores de la base de datos y los convierte en objetos para que unity puede usarlos
+
+        List<JugadorDB> filas = conexion.Query<JugadorDB>(
+            "SELECT Id, Nombre, Gemas, IdCasilla, x AS X, y AS Y FROM Jugadores;"
+        );
+
+        foreach (JugadorDB fila in filas)
+        {
+            Jugador jugador = new Jugador(
+                fila.Id,
+                fila.Nombre,
+                fila.Gemas,
+                fila.IdCasilla,
+                fila.X,
+                fila.Y
+            );
+
+            jugadores.Add(jugador);
+        }
 
         return jugadores;
     }
 
-//carga todas las casillas del tablero desde Sqlite y las devuelve ordenadas para que Unity pueda trackear el recorrido
     public List<Casilla> SelectCasillas()
     {
         List<Casilla> casillas = new List<Casilla>();
 
-        using (IDbConnection conexion = CrearConexion())
+        if (!EstaConectado())
         {
-            using (IDbCommand comando = conexion.CreateCommand())
-            {
-                comando.CommandText = "SELECT Id_casilla, Tipo, Orden, x, y, Id_reto, Id_tablero FROM Casilla ORDER BY Orden;";
+            Debug.LogError("No hay conexión con la base de datos.");
+            return casillas;
+        }
 
-                using (IDataReader reader = comando.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        Casilla casilla = new Casilla(
-                            reader.GetInt32(0),
-                            reader.GetString(1),
-                            reader.GetInt32(2),
-                            reader.GetInt32(3),
-                            reader.GetInt32(4),
-                            reader.GetInt32(5),
-                            reader.GetInt32(6)
-                        );
+        List<CasillaDB> filas = conexion.Query<CasillaDB>(
+            "SELECT Id_casilla AS Id, Tipo, Orden, x AS X, y AS Y, Id_reto AS IdReto, Id_tablero AS IdTablero FROM Casilla ORDER BY Orden;"
+        );
 
-                        casillas.Add(casilla);
-                    }
-                }
-            }
+        foreach (CasillaDB fila in filas)
+        {
+            Casilla casilla = new Casilla(
+                fila.Id,
+                fila.Orden,
+                fila.Tipo,
+                fila.IdReto,
+                fila.X,
+                fila.Y
+            );
+
+            casillas.Add(casilla);
         }
 
         return casillas;
     }
 
-    public Casilla GetCasillaPorOrden(int orden)
+    public List<Reto> SelectRetos()
     {
-        using (IDbConnection conexion = CrearConexion())
-        {
-            using (IDbCommand comando = conexion.CreateCommand())
-            {
-                comando.CommandText = "SELECT Id_casilla, Tipo, Orden, x, y, Id_reto, Id_tablero FROM Casilla WHERE Orden = @orden;";
-                AgregarParametro(comando, "@orden", orden);
+        List<Reto> retos = new List<Reto>();
 
-                using (IDataReader reader = comando.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return new Casilla(
-                            reader.GetInt32(0),
-                            reader.GetString(1),
-                            reader.GetInt32(2),
-                            reader.GetInt32(3),
-                            reader.GetInt32(4),
-                            reader.GetInt32(5),
-                            reader.GetInt32(6)
-                        );
-                    }
-                }
-            }
+        if (!EstaConectado())
+        {
+            Debug.LogError("No hay conexión con la base de datos.");
+            return retos;
         }
 
-        return null;
+        List<RetoDB> filas = conexion.Query<RetoDB>(
+            "SELECT Id_reto AS Id, Tipo_casilla AS TipoCasilla, Descripcion FROM Retos;"
+        );
+
+        foreach (RetoDB fila in filas)
+        {
+            Reto reto = new Reto(
+                fila.Id,
+                fila.TipoCasilla,
+                fila.Descripcion
+            );
+
+            retos.Add(reto);
+        }
+
+        return retos;
+    }
+
+    public Casilla GetCasillaPorOrden(int orden)
+    {
+        if (!EstaConectado())
+        {
+            Debug.LogError("No hay conexión con la base de datos.");
+            return null;
+        }
+
+        List<CasillaDB> filas = conexion.Query<CasillaDB>(
+            "SELECT Id_casilla AS Id, Tipo, Orden, x AS X, y AS Y, Id_reto AS IdReto, Id_tablero AS IdTablero FROM Casilla WHERE Orden = ?;",
+            orden
+        );
+
+        if (filas.Count == 0)
+        {
+            return null;
+        }
+
+        CasillaDB fila = filas[0];
+
+        return new Casilla(
+            fila.Id,
+            fila.Orden,
+            fila.Tipo,
+            fila.IdReto,
+            fila.X,
+            fila.Y
+        );
     }
 
     public Reto GetRetoPorId(int idReto)
     {
-        using (IDbConnection conexion = CrearConexion())
+        if (!EstaConectado())
         {
-            using (IDbCommand comando = conexion.CreateCommand())
-            {
-                comando.CommandText = "SELECT Id_reto, Tipo_casilla, Descripcion FROM Retos WHERE Id_reto = @idReto;";
-                AgregarParametro(comando, "@idReto", idReto);
-
-                using (IDataReader reader = comando.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return new Reto(
-                            reader.GetInt32(0),
-                            reader.GetString(1),
-                            reader.GetString(2)
-                        );
-                    }
-                }
-            }
+            Debug.LogError("No hay conexión con la base de datos.");
+            return null;
         }
 
-        return null;
-    }
+        List<RetoDB> filas = conexion.Query<RetoDB>(
+            "SELECT Id_reto AS Id, Tipo_casilla AS TipoCasilla, Descripcion FROM Retos WHERE Id_reto = ?;",
+            idReto
+        );
 
-    public void ActualizarPosicionJugador(int idJugador, int nuevaCasilla, int x, int y)
-    {
-        using (IDbConnection conexion = CrearConexion())
+        if (filas.Count == 0)
         {
-            using (IDbCommand comando = conexion.CreateCommand())
-            {
-                comando.CommandText = @"
-                    UPDATE Jugadores
-                    SET IdCasilla = @nuevaCasilla, x = @x, y = @y
-                    WHERE Id = @idJugador;
-                ";
-
-                AgregarParametro(comando, "@nuevaCasilla", nuevaCasilla);
-                AgregarParametro(comando, "@x", x);
-                AgregarParametro(comando, "@y", y);
-                AgregarParametro(comando, "@idJugador", idJugador);
-
-                comando.ExecuteNonQuery();
-            }
+            return null;
         }
+
+        RetoDB fila = filas[0];
+
+        return new Reto(
+            fila.Id,
+            fila.TipoCasilla,
+            fila.Descripcion
+        );
     }
 
-    public void ActualizarGemasJugador(int idJugador, int nuevasGemas)
+    private void OnDestroy()
     {
-        using (IDbConnection conexion = CrearConexion())
+        if (conexion != null)
         {
-            using (IDbCommand comando = conexion.CreateCommand())
-            {
-                comando.CommandText = "UPDATE Jugadores SET Gemas = @gemas WHERE Id = @idJugador;";
-
-                AgregarParametro(comando, "@gemas", nuevasGemas);
-                AgregarParametro(comando, "@idJugador", idJugador);
-
-                comando.ExecuteNonQuery();
-            }
+            conexion.Close();
+            conexion = null;
         }
     }
 }
-*/
+
+public class JugadorDB
+{
+    public int Id { get; set; }
+    public string Nombre { get; set; }
+    public int Gemas { get; set; }
+    public int IdCasilla { get; set; }
+    public float X { get; set; }
+    public float Y { get; set; }
+}
+
+public class CasillaDB
+{
+    public int Id { get; set; }
+    public string Tipo { get; set; }
+    public int Orden { get; set; }
+    public float X { get; set; }
+    public float Y { get; set; }
+    public int IdReto { get; set; }
+    public int IdTablero { get; set; }
+}
+
+public class RetoDB
+{
+    public int Id { get; set; }
+    public string TipoCasilla { get; set; }
+    public string Descripcion { get; set; }
+}
