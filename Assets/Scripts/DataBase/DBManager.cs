@@ -231,6 +231,22 @@ public class DBManager : MonoBehaviour
         Debug.Log("Gemas actualizadas en SQLite para jugador " + idJugador);
     }
 
+    
+    public void ResetearJugadores()
+{
+    if (!EstaConectado())
+    {
+        Debug.LogError("No hay conexión con la base de datos para resetear jugadores.");
+        return;
+    }
+
+    conexion.Execute(
+        "UPDATE Jugadores SET IdCasilla = 1, x = 0, y = 0, Gemas = 0;"
+    );
+
+    Debug.Log("Jugadores reseteados en SQLite.");
+}
+
     private void OnDestroy()
     {
         if (conexion != null)

@@ -18,12 +18,12 @@ public class BotonDadoTablero : MonoBehaviour
         boton.onClick.RemoveAllListeners();
         boton.onClick.AddListener(AbrirDado);
 
-        Debug.Log("Botón Dado conectado automáticamente por código.");
+        Debug.Log("Botón Dado conectado automáticamente.");
     }
 
     public void AbrirDado()
     {
-        Debug.Log("Botón Dado presionado desde Tablero.");
+        Debug.Log("Botón Dado presionado.");
 
         if (GameManager.Instance != null)
         {

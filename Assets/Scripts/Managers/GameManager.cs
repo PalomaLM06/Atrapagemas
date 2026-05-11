@@ -48,6 +48,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        DBManager.Instance.ResetearJugadores();
         jugadores = DBManager.Instance.SelectJugadores();
         casillas = DBManager.Instance.SelectCasillas();
         retos = DBManager.Instance.SelectRetos();

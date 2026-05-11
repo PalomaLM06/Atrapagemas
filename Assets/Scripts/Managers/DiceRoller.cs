@@ -10,6 +10,20 @@ public class DiceRoller : MonoBehaviour
 
     private bool isRolling = false;
 
+    void Awake()
+    {
+        if (rollButton != null)
+        {
+            rollButton.onClick.RemoveAllListeners();
+            rollButton.onClick.AddListener(RollDice);
+            Debug.Log("Botón Tirar conectado automáticamente.");
+        }
+        else
+        {
+            Debug.LogError("DiceRoller: falta asignar Roll Button.");
+        }
+    }
+
     public void RollDice()
     {
         if (isRolling)
