@@ -11,5 +11,11 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Dados.unity
     guid: 63120c0d405a4d84c8b16ca697c8357a
+  - enabled: 1
+    path: Assets/Scenes/MenuInicial.unity
+    guid: b72ffb2ae0c970d4f8370da746edfbe9
+  - enabled: 1
+    path: Assets/Scenes/CharacterSelectScene.unity
+    guid: dd49306b94cd44c46a531ac76cb504db
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
